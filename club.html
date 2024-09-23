@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistika Kluba</title>
+    <link rel="stylesheet" href="style.css">
+    
+</head>
+<body>
+    <h1>Statistika Kluba</h1>
+
+    <!-- Tabela za treninge -->
+    <h2>Statistika Treninga</h2>
+    <table id="trening-table">
+        <thead>
+            <tr>
+                <th>Ime Igrača</th>
+                <th>Broj Treninga</th>
+                <th>Prosek Bacanja</th>
+                <th>Prosek Promašaja</th>
+                <th id="delete-header-trening" style="display: none;">Akcije</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dinamički se dodaju podaci za treninge -->
+        </tbody>
+    </table>
+
+    <!-- Tabela za utakmice -->
+    <h2>Statistika Utakmica</h2>
+    <table id="utakmica-table">
+        <thead>
+            <tr>
+                <th>Ime Igrača</th>
+                <th>Broj Utakmica</th>
+                <th>Prosek Bacanja</th>
+                <th>Prosek Promašaja</th>
+                <th id="delete-header-utakmica" style="display: none;">Akcije</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Dinamički se dodaju podaci za utakmice -->
+        </tbody>
+    </table>
+
+    <!-- Forma za dodavanje igrača -->
+    <h3 id="add-player-header" style="display: none;">Dodaj Igrača</h3>
+    <form id="add-player-form" style="display: none;">
+        <input type="text" id="player-name" placeholder="Unesite ime igrača" required>
+        <button type="submit">Dodaj Igrača</button>
+    </form>
+
+    <!-- Lista Igrača -->
+    <h3>Lista Igrača</h3>
+    <ul id="players-list">
+        <!-- Dinamički se dodaju igrači -->
+    </ul>
+
+    <!-- Forma za unos treninga (vidi se samo ako je admin) -->
+    <h3 id="add-trening-header" style="display: none;">Unos Treninga</h3>
+    <form id="add-trening-form" style="display: none;">
+        <label for="player-select">Izaberite Igrača:</label>
+        <select id="player-select">
+            <!-- Dinamički popunjeno sa imenima igrača -->
+        </select>
+
+        <label for="trening-bacanja">Ukupno Bacio:</label>
+        <input type="number" id="trening-bacanja" placeholder="Unesite broj bacanja" required>
+
+        <label for="trening-promasaji">Promašaji:</label>
+        <input type="number" id="trening-promasaji" placeholder="Unesite broj promašaja" required>
+
+        <label for="trening-datum">Datum:</label>
+        <input type="date" id="trening-datum" required>
+
+        <button type="submit">Dodaj Trening</button>
+    </form>
+
+    <!-- Gumb za dodavanje utakmice (vidi se samo ako je admin) -->
+    <button id="add-match-button" style="display: none;">Dodaj Utakmicu</button>
+
+    <!-- Dugme za logout -->
+    <button id="logout-button">Logout</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const isAdmin = localStorage.getItem('isAdmin') === 'true';
+
+            if (isAdmin) {
+                document.getElementById('add-player-header').style.display = 'block';
+                document.getElementById('add-player-form').style.display = 'block';
+                document.getElementById('add-trening-header').style.display = 'block';
+                document.getElementById('add-trening-form').style.display = 'block';
+                document.getElementById('add-match-button').style.display = 'block';
+                document.getElementById('delete-header-trening').style.display = 'table-cell';
+                document.getElementById('delete-header-utakmica').style.display = 'table-cell';
+            }
+
+            let players = JSON.parse(localStorage.getItem('players')) || [];
+            let treningStats = JSON.parse(localStorage.getItem('treningStats')) || [];
+            let utakmicaStats = JSON.parse(localStorage.getItem('utakmicaStats')) || [];
+
+            // Funkcija za ažuriranje liste igrača
+            function updatePlayerList() {
+                const playerList = document.getElementById('players-list');
+                playerList.innerHTML = '';  // Očisti trenutnu listu
+
+                players.forEach(player => {
+                    const li = document.createElement('li');
+                    li.textContent = player;
+
+                    // Kreiranje dugmeta za pregled istorije
+                    const viewHistoryButton = document.createElement('button');
+                    viewHistoryButton.textContent = 'Pogledaj istoriju';
+                    viewHistoryButton.addEventListener('click', () => {
+                        window.location.href = `history.html?player=${encodeURIComponent(player)}`;
+                    });
+
+                    li.appendChild(viewHistoryButton);
+                    playerList.appendChild(li);
+
+                    // Ažuriraj i padajući meni za treninge
+                    const playerSelect = document.getElementById('player-select');
+                    const option = document.createElement('option');
+                    option.value = player;
+                    option.textContent = player;
+                    playerSelect.appendChild(option);
+                });
+            }
+
+            // Ažuriraj statistiku treninga
+            function updateTreningStats() {
+                const treningTableBody = document.getElementById('trening-table').getElementsByTagName('tbody')[0];
+                treningTableBody.innerHTML = '';  // Očisti trenutnu statistiku
+
+                players.forEach(player => {
+                    const playerStats = treningStats.filter(stat => stat.player === player);
+                    const brojTreninga = playerStats.length;
+                    const totalBacanja = playerStats.reduce((sum, stat) => sum + stat.bacanja, 0);
+                    const totalPromasaji = playerStats.reduce((sum, stat) => sum + stat.promasaji, 0);
+
+                    if (brojTreninga > 0) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${player}</td>
+                            <td>${brojTreninga}</td>
+                            <td>${(totalBacanja / brojTreninga).toFixed(2)}</td>
+                            <td>${(totalPromasaji / brojTreninga).toFixed(2)}</td>
+                        `;
+                        treningTableBody.appendChild(row);
+                    }
+                });
+            }
+
+            // Ažuriraj statistiku utakmica
+            function updateUtakmicaStats() {
+                const utakmicaTableBody = document.getElementById('utakmica-table').getElementsByTagName('tbody')[0];
+                utakmicaTableBody.innerHTML = '';  // Očisti trenutnu statistiku
+
+                players.forEach(player => {
+                    const playerStats = utakmicaStats.filter(stat => stat.player === player);
+                    const brojUtakmica = playerStats.length;
+                    const totalBacanja = playerStats.reduce((sum, stat) => sum + stat.bacanja, 0);
+                    const totalPromasaji = playerStats.reduce((sum, stat) => sum + stat.promasaji, 0);
+
+                    if (brojUtakmica > 0) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${player}</td>
+                            <td>${brojUtakmica}</td>
+                            <td>${(totalBacanja / brojUtakmica).toFixed(2)}</td>
+                            <td>${(totalPromasaji / brojUtakmica).toFixed(2)}</td>
+                        `;
+                        utakmicaTableBody.appendChild(row);
+                    }
+                });
+            }
+
+            // Dodavanje igrača u listu i localStorage
+            document.getElementById('add-player-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const playerName = document.getElementById('player-name').value.trim();
+
+                if (playerName) {
+                    players.push(playerName);
+                    localStorage.setItem('players', JSON.stringify(players));  // Sačuvaj u localStorage
+                    updatePlayerList();
+                    document.getElementById('player-name').value = '';  // Očisti polje nakon dodavanja
+                }
+            });
+
+            // Dodavanje treninga u statistiku (omogućava unos promašaja sa 0)
+            document.getElementById('add-trening-form').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const player = document.getElementById('player-select').value;
+                const bacanja = parseInt(document.getElementById('trening-bacanja').value);
+                const promasaji = parseInt(document.getElementById('trening-promasaji').value);
+                const datum = document.getElementById('trening-datum').value;
+
+                if (player && bacanja >= 0 && promasaji >= 0) {
+                    treningStats.push({ player, bacanja, promasaji, datum });
+                    localStorage.setItem('treningStats', JSON.stringify(treningStats));  // Sačuvaj u localStorage
+                    updateTreningStats();
+                    alert('Trening uspješno dodat!');
+                } else {
+                    alert('Molimo unesite ispravne podatke!');
+                }
+            });
+
+            // Potvrđivanje utakmice
+            document.getElementById('add-match-button').addEventListener('click', () => {
+                window.location.href = 'unos-utakmice.html';
+            });
+
+            // Ažuriraj listu igrača i statistiku prilikom učitavanja stranice
+            updatePlayerList();
+            updateTreningStats();
+            updateUtakmicaStats();
+
+            // Logout funkcionalnost
+            document.getElementById('logout-button').addEventListener('click', () => {
+                localStorage.removeItem('isAdmin');
+                window.location.href = 'login.html';
+            });
+        });
+    </script>
+</body>
+</html>

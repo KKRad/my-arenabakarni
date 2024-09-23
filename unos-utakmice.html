@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unos Utakmice</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Unos Utakmice</h1>
+
+    <!-- Ime protivnika i datum utakmice -->
+    <div class="form-container">
+        <label for="opponent-name">Ime Protivnika:</label>
+        <input type="text" id="opponent-name" placeholder="Unesite ime protivnika" required>
+
+        <label for="match-date">Datum Utakmice:</label>
+        <input type="date" id="match-date" required>
+    </div>
+
+    <!-- Unos za 6 igrača -->
+    <h3>Unos za 6 Igrača</h3>
+    <table id="match-players-table">
+        <thead>
+            <tr>
+                <th>Igrač</th>
+                <th>Rezultat</th>
+                <th>Promašaji</th>
+                <th>Match Poen</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr id="player-row-1">
+                <td><select id="player-1"></select></td>
+                <td><input type="number" id="rezultat-1" placeholder="Unesite rezultat" required></td>
+                <td><input type="number" id="promasaji-1" placeholder="Unesite broj promašaja" required></td>
+                <td><input type="checkbox" id="match-poen-1"></td>
+            </tr>
+            <tr id="player-row-2">
+                <td><select id="player-2"></select></td>
+                <td><input type="number" id="rezultat-2" placeholder="Unesite rezultat" required></td>
+                <td><input type="number" id="promasaji-2" placeholder="Unesite broj promašaja" required></td>
+                <td><input type="checkbox" id="match-poen-2"></td>
+            </tr>
+            <tr id="player-row-3">
+                <td><select id="player-3"></select></td>
+                <td><input type="number" id="rezultat-3" placeholder="Unesite rezultat" required></td>
+                <td><input type="number" id="promasaji-3" placeholder="Unesite broj promašaja" required></td>
+                <td><input type="checkbox" id="match-poen-3"></td>
+            </tr>
+            <tr id="player-row-4">
+                <td><select id="player-4"></select></td>
+                <td><input type="number" id="rezultat-4" placeholder="Unesite rezultat" required></td>
+                <td><input type="number" id="promasaji-4" placeholder="Unesite broj promašaja" required></td>
+                <td><input type="checkbox" id="match-poen-4"></td>
+            </tr>
+            <tr id="player-row-5">
+                <td><select id="player-5"></select></td>
+                <td><input type="number" id="rezultat-5" placeholder="Unesite rezultat" required></td>
+                <td><input type="number" id="promasaji-5" placeholder="Unesite broj promašaja" required></td>
+                <td><input type="checkbox" id="match-poen-5"></td>
+            </tr>
+            <tr id="player-row-6">
+                <td><select id="player-6"></select></td>
+                <td><input type="number" id="rezultat-6" placeholder="Unesite rezultat" required></td>
+                <td><input type="number" id="promasaji-6" placeholder="Unesite broj promašaja" required></td>
+                <td><input type="checkbox" id="match-poen-6"></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Ukupni rezultati i match poeni -->
+    <div class="form-container">
+        <label for="our-team-total">Ukupan Rezultat Naše Ekipe:</label>
+        <input type="number" id="our-team-total" placeholder="Unesite rezultat" readonly>
+
+        <label for="opponent-team-total">Ukupan Rezultat Protivničke Ekipe:</label>
+        <input type="number" id="opponent-team-total" placeholder="Unesite rezultat" required>
+
+        <label for="match-poeni">Match Poeni Naše Ekipe:</label>
+        <input type="number" id="match-poeni" readonly>
+    </div>
+
+    <!-- Dugme za potvrdu unosa -->
+    <button type="submit" id="submit-match-button">Potvrdi Utakmicu</button>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let players = JSON.parse(localStorage.getItem('players')) || [];
+            let utakmicaStats = JSON.parse(localStorage.getItem('utakmicaStats')) || [];
+
+            const playerDropdowns = [1, 2, 3, 4, 5, 6].map(index => document.getElementById(`player-${index}`));
+
+            // Popuni dropdown-ove za igrače
+            function populateDropdowns() {
+                playerDropdowns.forEach(dropdown => {
+                    dropdown.innerHTML = '<option value="">Izaberite Igrača</option>';
+                    players.forEach(player => {
+                        const option = document.createElement('option');
+                        option.value = player;
+                        option.textContent = player;
+                        dropdown.appendChild(option);
+                    });
+                });
+            }
+
+            populateDropdowns();
+
+            // Potvrđivanje utakmice
+            document.getElementById('submit-match-button').addEventListener('click', () => {
+                const matchData = {
+                    opponent: document.getElementById('opponent-name').value,
+                    date: document.getElementById('match-date').value,
+                    results: [],
+                };
+
+                // Provera da li je datum unesen
+                if (!matchData.date) {
+                    alert('Molimo unesite datum utakmice!');
+                    return;
+                }
+
+                // Povuci rezultate za svih 6 igrača
+                for (let i = 1; i <= 6; i++) {
+                    matchData.results.push({
+                        player: document.getElementById(`player-${i}`).value,
+                        bacanja: document.getElementById(`rezultat-${i}`).value,
+                        promasaji: document.getElementById(`promasaji-${i}`).value,
+                        matchPoen: document.getElementById(`match-poen-${i}`).checked,
+                    });
+                }
+
+                // Ažuriraj utakmicaStats
+                matchData.results.forEach(result => {
+                    utakmicaStats.push({
+                        player: result.player,
+                        bacanja: parseInt(result.bacanja),
+                        promasaji: parseInt(result.promasaji),
+                        datum: matchData.date,
+                    });
+                });
+
+                localStorage.setItem('utakmicaStats', JSON.stringify(utakmicaStats));
+
+                alert('Utakmica uspješno potvrđena!');
+                window.location.href = 'club.html';  // Preusmjeri na statistiku
+            });
+        });
+    </script>
+</body>
+</html>

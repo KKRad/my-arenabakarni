@@ -1,0 +1,123 @@
+/* Opšti stil za telo stranice */
+body {
+    background-color: #000000; /* Crna pozadina */
+    color: #FFD700; /* Zlatna boja teksta */
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Stil za glavni naslov */
+h1 {
+    text-align: center;
+    color: #FFD700;
+    margin-top: 20px;
+}
+
+/* Stil za dugmad */
+.buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 50px;
+}
+
+button {
+    background-color: #FFD700;
+    color: #000000;
+    border: none;
+    padding: 20px 40px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform 0.2s, background-color 0.3s;
+}
+
+button:hover {
+    background-color: #b8860b;
+    transform: scale(1.05); /* Povećava dugme prilikom hovera */
+}
+
+/* Stil za inpute */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select {
+    width: 100%;
+    padding: 12px;
+    margin: 8px 0;
+    border: 1px solid #FFD700;
+    border-radius: 4px;
+    background-color: #333333;
+    color: #FFD700;
+}
+
+/* Stil za tabele */
+table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #FFD700;
+    padding: 12px;
+    text-align: center;
+}
+
+th {
+    background-color: #333333;
+    color: #FFD700;
+}
+
+td {
+    background-color: #000000;
+    color: #FFD700;
+}
+
+/* Stil za dugme za potvrdu utakmice */
+#submit-match-button {
+    background-color: #FFD700;
+    color: #000000;
+    border: none;
+    padding: 15px 30px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    display: block;
+    margin: 20px auto;
+    width: 100%;
+}
+
+#submit-match-button:hover {
+    background-color: #b8860b;
+}
+
+/* Stil za mobilne uređaje */
+@media screen and (max-width: 600px) {
+    button {
+        padding: 15px 20px;
+        font-size: 16px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    select {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    th, td {
+        padding: 10px;
+        font-size: 14px;
+    }
+
+    #submit-match-button {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+}
