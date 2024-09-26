@@ -77,10 +77,7 @@ app.post("/api/players/:id/trening", (req, res) => {
     const { bacanja, promasaji } = req.body;
     const playerId = req.params.id;
 
-    if (
-        typeof bacanja !== "number" ||
-        (typeof promasaji !== "number" && promasaji !== 0)
-    ) {
+    if (typeof bacanja !== "number" || typeof promasaji !== "number") {
         return res
             .status(400)
             .json({ error: "Bacanja i Promašaji moraju biti brojevi" });
@@ -134,10 +131,7 @@ app.post("/api/players/:id/utakmica", (req, res) => {
     const { bacanja, promasaji } = req.body;
     const playerId = req.params.id;
 
-    if (
-        typeof bacanja !== "number" ||
-        (typeof promasaji !== "number" && promasaji !== 0)
-    ) {
+    if (typeof bacanja !== "number" || typeof promasaji !== "number") {
         return res
             .status(400)
             .json({ error: "Bacanja i Promašaji moraju biti brojevi" });
@@ -187,11 +181,11 @@ app.post("/api/players/:id/utakmica", (req, res) => {
     });
 });
 
-// Brisanje igrača
+// Brisanje igrača i svih njegovih statistika (treninga i utakmica)
 app.delete("/api/players/:id", (req, res) => {
     const playerId = req.params.id;
-    const sqlDelete = `DELETE FROM players WHERE id = ?`;
-    db.run(sqlDelete, playerId, function (err) {
+    const sqlDeletePlayer = `DELETE FROM players WHERE id = ?`;
+    db.run(sqlDeletePlayer, playerId, function (err) {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
