@@ -2,22 +2,33 @@ const urlParams = new URLSearchParams(window.location.search);
 const playerName = urlParams.get('player');
 document.getElementById('player-name').textContent = playerName;
 
-// Mock podaci za istoriju treninga i utakmica
-const trainingHistory = [
-    { date: '2024-09-01', throws: 50, misses: 5 },
-    { date: '2024-09-05', throws: 45, misses: 7 },
-];
+const trainingHistory = [];
+const matchHistory = [];
 
-const matchHistory = [
-    { date: '2024-09-10', throws: 40, misses: 3, matchPoints: true },
-    { date: '2024-09-15', throws: 42, misses: 2, matchPoints: false },
-];
-
-// Popunjava tabelu istorije treninga
+// Učitaj istoriju treninga sa servera
 function loadTrainingHistory() {
-    const trainingTable = document.getElementById('training-history').getElementsByTagName('tbody')[0];
-    trainingTable.innerHTML = "";
+    fetch(`http://localhost:3000/api/players/${playerName}/trenings`)
+        .then(response => response.json())
+        .then(data => {
+            trainingHistory.push(...data);
+            updateTrainingTable();
+        })
+        .catch(error => console.error('Error fetching training history:', error));
+}
 
+function loadMatchHistory() {
+    fetch(`http://localhost:3000/api/players/${playerName}/utakmicas`)
+        .then(response => response.json())
+        .then(data => {
+            matchHistory.push(...data);
+            updateMatchTable();
+        })
+        .catch(error => console.error('Error fetching match history:', error));
+}
+
+function updateTrainingTable() {
+    const trainingTable = document.getElementById('training-history').getElementsByTagName('tbody')[0];
+    trainingTable.innerHTML = '';
     trainingHistory.forEach(entry => {
         let row = trainingTable.insertRow();
         row.insertCell(0).textContent = entry.date;
@@ -26,11 +37,9 @@ function loadTrainingHistory() {
     });
 }
 
-// Popunjava tabelu istorije utakmica
-function loadMatchHistory() {
+function updateMatchTable() {
     const matchTable = document.getElementById('match-history').getElementsByTagName('tbody')[0];
-    matchTable.innerHTML = "";
-
+    matchTable.innerHTML = '';
     matchHistory.forEach(entry => {
         let row = matchTable.insertRow();
         row.insertCell(0).textContent = entry.date;
@@ -40,47 +49,5 @@ function loadMatchHistory() {
     });
 }
 
-// Kreira grafikon napretka igrača koristeći Chart.js
-function loadProgressChart() {
-    const ctx = document.getElementById('progress-chart').getContext('2d');
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: trainingHistory.map(entry => entry.date),
-            datasets: [
-                {
-                    label: 'Treninzi',
-                    data: trainingHistory.map(entry => entry.throws),
-                    borderColor: 'blue',
-                    fill: false,
-                },
-                {
-                    label: 'Utakmice',
-                    data: matchHistory.map(entry => entry.throws),
-                    borderColor: 'green',
-                    fill: false,
-                },
-                {
-                    label: 'Promašaji',
-                    data: trainingHistory.map(entry => entry.misses),
-                    borderColor: 'red',
-                    fill: false,
-                }
-            ]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    suggestedMax: 60
-                }
-            }
-        }
-    });
-}
-
-// Učitaj podatke pri pokretanju
 loadTrainingHistory();
 loadMatchHistory();
-loadProgressChart();
-
