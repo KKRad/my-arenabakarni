@@ -1,3 +1,5 @@
+require("dotenv").config();
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -15,7 +17,7 @@ const supabase = createClient(
 
 // CORS postavke: omogucavanje pristupa sa svih domena ili specificnih domena
 const corsOptions = {
-    origin: "https://www.kkrad.com", // Ovde postavi tačan domen
+    origin: "*", // Možeš koristiti tačan domen, npr. "https://www.kkrad.com" za produkciju
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
 };
@@ -33,6 +35,7 @@ app.post("/api/players", async (req, res) => {
     const { data, error } = await supabase.from("players").insert([{ name }]);
 
     if (error) {
+        console.error("Error inserting player:", error);
         return res.status(500).json({ error: error.message });
     }
 
@@ -44,6 +47,7 @@ app.get("/api/players", async (req, res) => {
     const { data, error } = await supabase.from("players").select();
 
     if (error) {
+        console.error("Error fetching players:", error);
         return res.status(500).json({ error: error.message });
     }
 
@@ -83,6 +87,7 @@ app.post("/api/players/:id/trening", async (req, res) => {
         .eq("id", playerId);
 
     if (updateError) {
+        console.error("Error updating training stats:", updateError);
         return res.status(500).json({ error: updateError.message });
     }
 
@@ -104,6 +109,7 @@ app.delete("/api/players/:id", async (req, res) => {
         .eq("id", playerId);
 
     if (error) {
+        console.error("Error deleting player:", error);
         return res.status(500).json({ error: error.message });
     }
 
