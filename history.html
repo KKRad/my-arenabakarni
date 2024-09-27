@@ -1,187 +1,226 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Istorija Bacanja</title>
-    <!-- Uključivanje Plotly.js biblioteke -->
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <h1>Istorija Bacanja za <span id="player-name"></span></h1>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Istorija Bacanja</title>
+        <!-- Uključivanje Plotly.js biblioteke -->
+        <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+        <h1>Istorija Bacanja za <span id="player-name"></span></h1>
 
-    <!-- Filter po datumu -->
-    <div>
-        <label for="start-date">Od:</label>
-        <input type="date" id="start-date">
-        <label for="end-date">Do:</label>
-        <button id="filter-button">Filtriraj</button>
-    </div>
+        <!-- Filter po datumu -->
+        <div>
+            <label for="start-date">Od:</label>
+            <input type="date" id="start-date" />
+            <label for="end-date">Do:</label>
+            <button id="filter-button">Filtriraj</button>
+        </div>
 
-    <!-- Tabela za treninge -->
-    <h2>Treninzi</h2>
-    <table id="trening-table">
-        <thead>
-            <tr>
-                <th>Datum</th>
-                <th>Bacanja</th>
-                <th>Promašaji</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Dinamički se dodaju podaci za treninge -->
-        </tbody>
-    </table>
+        <!-- Tabela za treninge -->
+        <h2>Treninzi</h2>
+        <table id="trening-table">
+            <thead>
+                <tr>
+                    <th>Datum</th>
+                    <th>Bacanja</th>
+                    <th>Promašaji</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dinamički se dodaju podaci za treninge -->
+            </tbody>
+        </table>
 
-    <!-- Tabela za utakmice -->
-    <h2>Utakmice</h2>
-    <table id="utakmica-table">
-        <thead>
-            <tr>
-                <th>Datum</th>
-                <th>Bacanja</th>
-                <th>Promašaji</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Dinamički se dodaju podaci za utakmice -->
-        </tbody>
-    </table>
+        <!-- Tabela za utakmice -->
+        <h2>Utakmice</h2>
+        <table id="utakmica-table">
+            <thead>
+                <tr>
+                    <th>Datum</th>
+                    <th>Bacanja</th>
+                    <th>Promašaji</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Dinamički se dodaju podaci za utakmice -->
+            </tbody>
+        </table>
 
-    <!-- Grafikon za istoriju bacanja -->
-    <div id="chart_div" style="width: 100%; height: 500px;"></div>
+        <!-- Grafikon za istoriju bacanja -->
+        <div id="chart_div" style="width: 100%; height: 500px"></div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const playerName = urlParams.get('player');
-            document.getElementById('player-name').textContent = playerName;
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const playerName = urlParams.get("player");
+                document.getElementById("player-name").textContent = playerName;
 
-            const treningStats = JSON.parse(localStorage.getItem('treningStats')) || [];
-            const utakmicaStats = JSON.parse(localStorage.getItem('utakmicaStats')) || [];
+                const treningStats =
+                    JSON.parse(localStorage.getItem("treningStats")) || [];
+                const utakmicaStats =
+                    JSON.parse(localStorage.getItem("utakmicaStats")) || [];
 
-            // Filtriranje podataka po igraču
-            const playerTreningStats = treningStats.filter(stat => stat.player === playerName);
-            const playerUtakmicaStats = utakmicaStats.filter(stat => stat.player === playerName);
+                // Filtriranje podataka po igraču
+                const playerTreningStats = treningStats.filter(
+                    (stat) => stat.player === playerName,
+                );
+                const playerUtakmicaStats = utakmicaStats.filter(
+                    (stat) => stat.player === playerName,
+                );
 
-            const treningTableBody = document.querySelector('#trening-table tbody');
-            const utakmicaTableBody = document.querySelector('#utakmica-table tbody');
+                const treningTableBody = document.querySelector(
+                    "#trening-table tbody",
+                );
+                const utakmicaTableBody = document.querySelector(
+                    "#utakmica-table tbody",
+                );
 
-            // Popunjavanje tabela
-            function populateTables(startDate, endDate) {
-                treningTableBody.innerHTML = '';
-                utakmicaTableBody.innerHTML = '';
+                // Popunjavanje tabela
+                function populateTables(startDate, endDate) {
+                    treningTableBody.innerHTML = "";
+                    utakmicaTableBody.innerHTML = "";
 
-                // Filtriraj treninge po datumu
-                const filteredTreningStats = playerTreningStats.filter(stat => {
-                    const statDate = new Date(stat.datum);
-                    return (!startDate || statDate >= startDate) && (!endDate || statDate <= endDate);
-                });
+                    // Filtriraj treninge po datumu
+                    const filteredTreningStats = playerTreningStats.filter(
+                        (stat) => {
+                            const statDate = new Date(stat.datum);
+                            return (
+                                (!startDate || statDate >= startDate) &&
+                                (!endDate || statDate <= endDate)
+                            );
+                        },
+                    );
 
-                // Filtriraj utakmice po datumu
-                const filteredUtakmicaStats = playerUtakmicaStats.filter(stat => {
-                    const statDate = new Date(stat.datum);
-                    return (!startDate || statDate >= startDate) && (!endDate || statDate <= endDate);
-                });
+                    // Filtriraj utakmice po datumu
+                    const filteredUtakmicaStats = playerUtakmicaStats.filter(
+                        (stat) => {
+                            const statDate = new Date(stat.datum);
+                            return (
+                                (!startDate || statDate >= startDate) &&
+                                (!endDate || statDate <= endDate)
+                            );
+                        },
+                    );
 
-                // Popuni tabelu za treninge
-                filteredTreningStats.forEach(stat => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
+                    // Popuni tabelu za treninge
+                    filteredTreningStats.forEach((stat) => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
                         <td>${stat.datum}</td>
                         <td>${stat.bacanja}</td>
                         <td>${stat.promasaji}</td>
                     `;
-                    treningTableBody.appendChild(row);
-                });
+                        treningTableBody.appendChild(row);
+                    });
 
-                // Popuni tabelu za utakmice
-                filteredUtakmicaStats.forEach(stat => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
+                    // Popuni tabelu za utakmice
+                    filteredUtakmicaStats.forEach((stat) => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
                         <td>${stat.datum}</td>
                         <td>${stat.bacanja}</td>
                         <td>${stat.promasaji}</td>
                     `;
-                    utakmicaTableBody.appendChild(row);
-                });
+                        utakmicaTableBody.appendChild(row);
+                    });
 
-                // Ažuriraj grafikon
-                drawChart(filteredTreningStats, filteredUtakmicaStats);
-            }
+                    // Ažuriraj grafikon
+                    drawChart(filteredTreningStats, filteredUtakmicaStats);
+                }
 
-            // Prvobitno popunjavanje sa svim podacima
-            populateTables();
+                // Prvobitno popunjavanje sa svim podacima
+                populateTables();
 
-            // Filtriranje po datumu
-            document.getElementById('filter-button').addEventListener('click', () => {
-                const startDate = new Date(document.getElementById('start-date').value);
-                const endDate = new Date(document.getElementById('end-date').value);
-                populateTables(isNaN(startDate.getTime()) ? null : startDate, isNaN(endDate.getTime()) ? null : endDate);
+                // Filtriranje po datumu
+                document
+                    .getElementById("filter-button")
+                    .addEventListener("click", () => {
+                        const startDate = new Date(
+                            document.getElementById("start-date").value,
+                        );
+                        const endDate = new Date(
+                            document.getElementById("end-date").value,
+                        );
+                        populateTables(
+                            isNaN(startDate.getTime()) ? null : startDate,
+                            isNaN(endDate.getTime()) ? null : endDate,
+                        );
+                    });
+
+                // Funkcija za crtanje grafikona koristeći Plotly.js
+                function drawChart(treningData, utakmicaData) {
+                    const datumi = treningData
+                        .map((stat) => stat.datum)
+                        .concat(utakmicaData.map((stat) => stat.datum));
+                    const bacanjaTrening = treningData.map(
+                        (stat) => stat.bacanja,
+                    );
+                    const bacanjaUtakmica = utakmicaData.map(
+                        (stat) => stat.bacanja,
+                    );
+                    const promasajiTrening = treningData.map(
+                        (stat) => stat.promasaji,
+                    );
+                    const promasajiUtakmica = utakmicaData.map(
+                        (stat) => stat.promasaji,
+                    );
+
+                    const trace1 = {
+                        x: treningData.map((stat) => stat.datum),
+                        y: bacanjaTrening,
+                        mode: "lines+markers",
+                        name: "Bacanja (Trening)",
+                        line: { color: "blue" },
+                    };
+
+                    const trace2 = {
+                        x: utakmicaData.map((stat) => stat.datum),
+                        y: bacanjaUtakmica,
+                        mode: "lines+markers",
+                        name: "Bacanja (Utakmica)",
+                        line: { color: "green" }, // Zelena boja za utakmice
+                    };
+
+                    const trace3 = {
+                        x: treningData.map((stat) => stat.datum),
+                        y: promasajiTrening,
+                        mode: "lines+markers",
+                        name: "Promašaji (Trening)",
+                        yaxis: "y2",
+                        line: { color: "red" },
+                    };
+
+                    const trace4 = {
+                        x: utakmicaData.map((stat) => stat.datum),
+                        y: promasajiUtakmica,
+                        mode: "lines+markers",
+                        name: "Promašaji (Utakmica)",
+                        yaxis: "y2",
+                        line: { color: "red" },
+                    };
+
+                    const data = [trace1, trace2, trace3, trace4];
+
+                    const layout = {
+                        title: "Istorija Bacanja",
+                        xaxis: { title: "Datum" },
+                        yaxis: { title: "Bacanja", range: [400, 700] },
+                        yaxis2: {
+                            title: "Promašaji",
+                            overlaying: "y",
+                            side: "right",
+                            range: [1, 15],
+                        },
+                        height: 500,
+                        width: 900,
+                    };
+
+                    Plotly.newPlot("chart_div", data, layout);
+                }
             });
-
-            // Funkcija za crtanje grafikona koristeći Plotly.js
-            function drawChart(treningData, utakmicaData) {
-                const datumi = treningData.map(stat => stat.datum).concat(utakmicaData.map(stat => stat.datum));
-                const bacanjaTrening = treningData.map(stat => stat.bacanja);
-                const bacanjaUtakmica = utakmicaData.map(stat => stat.bacanja);
-                const promasajiTrening = treningData.map(stat => stat.promasaji);
-                const promasajiUtakmica = utakmicaData.map(stat => stat.promasaji);
-
-                const trace1 = {
-                    x: treningData.map(stat => stat.datum),
-                    y: bacanjaTrening,
-                    mode: 'lines+markers',
-                    name: 'Bacanja (Trening)',
-                    line: { color: 'blue' }
-                };
-
-                const trace2 = {
-                    x: utakmicaData.map(stat => stat.datum),
-                    y: bacanjaUtakmica,
-                    mode: 'lines+markers',
-                    name: 'Bacanja (Utakmica)',
-                    line: { color: 'green' }  // Zelena boja za utakmice
-                };
-
-                const trace3 = {
-                    x: treningData.map(stat => stat.datum),
-                    y: promasajiTrening,
-                    mode: 'lines+markers',
-                    name: 'Promašaji (Trening)',
-                    yaxis: 'y2',
-                    line: { color: 'red' }
-                };
-
-                const trace4 = {
-                    x: utakmicaData.map(stat => stat.datum),
-                    y: promasajiUtakmica,
-                    mode: 'lines+markers',
-                    name: 'Promašaji (Utakmica)',
-                    yaxis: 'y2',
-                    line: { color: 'red' }
-                };
-
-                const data = [trace1, trace2, trace3, trace4];
-
-                const layout = {
-                    title: 'Istorija Bacanja',
-                    xaxis: { title: 'Datum' },
-                    yaxis: { title: 'Bacanja', range: [400, 700] },
-                    yaxis2: {
-                        title: 'Promašaji',
-                        overlaying: 'y',
-                        side: 'right',
-                        range: [1, 15]
-                    },
-                    height: 500,
-                    width: 900
-                };
-
-                Plotly.newPlot('chart_div', data, layout);
-            }
-        });
-    </script>
-</body>
+        </script>
+    </body>
 </html>
