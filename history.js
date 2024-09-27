@@ -7,23 +7,23 @@ const matchHistory = [];
 
 // Učitaj istoriju treninga sa servera
 function loadTrainingHistory() {
-    fetch(`http://localhost:3000/api/players/${playerName}/trenings`)
+    fetch(`/api/players/${playerName}/trening`)
         .then(response => response.json())
         .then(data => {
             trainingHistory.push(...data);
             updateTrainingTable();
         })
-        .catch(error => console.error('Error fetching training history:', error));
+        .catch(error => console.error('Greška prilikom učitavanja treninga:', error));
 }
 
 function loadMatchHistory() {
-    fetch(`http://localhost:3000/api/players/${playerName}/utakmicas`)
+    fetch(`/api/players/${playerName}/utakmica`)
         .then(response => response.json())
         .then(data => {
             matchHistory.push(...data);
             updateMatchTable();
         })
-        .catch(error => console.error('Error fetching match history:', error));
+        .catch(error => console.error('Greška prilikom učitavanja utakmica:', error));
 }
 
 function updateTrainingTable() {

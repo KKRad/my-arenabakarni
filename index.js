@@ -1,199 +1,152 @@
 const express = require("express");
-const sqlite3 = require("sqlite3").verbose();
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const { createClient } = require("@supabase/supabase-js");
 
+// Kreiranje aplikacije
 const app = express();
 app.use(bodyParser.json());
 
+// Povezivanje sa Supabase
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+
 // CORS postavke: omogucavanje pristupa sa svih domena ili specificnih domena
 const corsOptions = {
-    origin: "*", // ili možete koristiti 'https://www.kkrad.com'
+    origin: "*", // ili možete koristiti specifične domene 'https://www.kkrad.com'
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
 };
 app.use(cors(corsOptions)); // Omogućava Cross-Origin Resource Sharing (CORS)
 
-// Povezivanje na SQLite bazu (kreira bazu ako ne postoji)
-const db = new sqlite3.Database("./club_stats.db", (err) => {
-    if (err) {
-        console.error("Greška prilikom povezivanja sa bazom:", err.message);
-    } else {
-        console.log("Povezano na SQLite bazu podataka.");
-    }
-});
-
-// Kreiranje tabele igrača ako ne postoji
-db.run(
-    `
-    CREATE TABLE IF NOT EXISTS players (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT NOT NULL,
-    treningBroj INTEGER DEFAULT 0,
-    prosjekBacanja REAL DEFAULT 0,
-    prosjekPromasaja REAL DEFAULT 0,
-    utakmicaBroj INTEGER DEFAULT 0,
-    prosjekBacanjaUtakmica REAL DEFAULT 0,
-    prosjekPromasajaUtakmica REAL DEFAULT 0
-)`,
-    (err) => {
-        if (err) {
-            console.error("Greška prilikom kreiranja tabele:", err.message);
-        }
-    },
-);
-
-// Dodavanje igrača sa validacijom
-app.post("/api/players", (req, res) => {
+// Dodavanje igrača sa Supabase
+app.post("/api/players", async (req, res) => {
     const { name } = req.body;
     if (!name || name.trim() === "") {
-        return res
-            .status(400)
-            .json({ error: "Ime je obavezno i ne može biti prazno" });
+        return res.status(400).json({ error: "Ime je obavezno i ne može biti prazno" });
     }
-    const sql = `INSERT INTO players (name) VALUES (?)`;
-    db.run(sql, [name], function (err) {
-        if (err) {
-            console.error("Greška prilikom unosa u bazu:", err.message);
-            return res.status(500).json({ error: err.message });
-        }
-        res.status(201).json({ id: this.lastID, name });
-    });
+
+    const { data, error } = await supabase
+        .from('players')
+        .insert([{ name }]);
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.status(201).json(data);
 });
 
 // Preuzimanje svih igrača
-app.get("/api/players", (req, res) => {
-    const sql = `SELECT * FROM players`;
-    db.all(sql, [], (err, rows) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        res.json(rows);
-    });
+app.get("/api/players", async (req, res) => {
+    const { data, error } = await supabase
+        .from('players')
+        .select();
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.json(data);
 });
 
 // Ažuriranje statistika treninga za igrača
-app.post("/api/players/:id/trening", (req, res) => {
+app.post("/api/players/:id/trening", async (req, res) => {
     const { bacanja, promasaji } = req.body;
     const playerId = req.params.id;
 
-    if (typeof bacanja !== "number" || typeof promasaji !== "number") {
-        return res
-            .status(400)
-            .json({ error: "Bacanja i Promašaji moraju biti brojevi" });
+    const { data: player, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('id', playerId)
+        .single();
+
+    if (error || !player) {
+        return res.status(404).json({ error: "Igrač nije pronađen" });
     }
 
-    db.get(`SELECT * FROM players WHERE id = ?`, [playerId], (err, player) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+    const noviTreningBroj = player.treningBroj + 1;
+    const noviProsjekBacanja =
+        (player.prosjekBacanja * player.treningBroj + bacanja) / noviTreningBroj;
+    const noviProsjekPromasaja =
+        (player.prosjekPromasaja * player.treningBroj + promasaji) / noviTreningBroj;
 
-        if (!player) {
-            return res.status(404).json({ error: "Igrač nije pronađen" });
-        }
+    const { error: updateError } = await supabase
+        .from('players')
+        .update({
+            treningBroj: noviTreningBroj,
+            prosjekBacanja: noviProsjekBacanja,
+            prosjekPromasaja: noviProsjekPromasaja
+        })
+        .eq('id', playerId);
 
-        const noviTreningBroj = player.treningBroj + 1;
-        const noviProsjekBacanja =
-            (player.prosjekBacanja * player.treningBroj + bacanja) /
-            noviTreningBroj;
-        const noviProsjekPromasaja =
-            (player.prosjekPromasaja * player.treningBroj + promasaji) /
-            noviTreningBroj;
+    if (updateError) {
+        return res.status(500).json({ error: updateError.message });
+    }
 
-        const sqlUpdate = `UPDATE players 
-                           SET treningBroj = ?, prosjekBacanja = ?, prosjekPromasaja = ? 
-                           WHERE id = ?`;
-        db.run(
-            sqlUpdate,
-            [
-                noviTreningBroj,
-                noviProsjekBacanja,
-                noviProsjekPromasaja,
-                playerId,
-            ],
-            function (err) {
-                if (err) {
-                    return res.status(500).json({ error: err.message });
-                }
-                res.json({
-                    id: playerId,
-                    treningBroj: noviTreningBroj,
-                    prosjekBacanja: noviProsjekBacanja,
-                    prosjekPromasaja: noviProsjekPromasaja,
-                });
-            },
-        );
+    res.json({
+        id: playerId,
+        treningBroj: noviTreningBroj,
+        prosjekBacanja: noviProsjekBacanja,
+        prosjekPromasaja: noviProsjekPromasaja
     });
 });
 
 // Ažuriranje statistika utakmica za igrača
-app.post("/api/players/:id/utakmica", (req, res) => {
+app.post("/api/players/:id/utakmica", async (req, res) => {
     const { bacanja, promasaji } = req.body;
     const playerId = req.params.id;
 
-    if (typeof bacanja !== "number" || typeof promasaji !== "number") {
-        return res
-            .status(400)
-            .json({ error: "Bacanja i Promašaji moraju biti brojevi" });
+    const { data: player, error } = await supabase
+        .from('players')
+        .select('*')
+        .eq('id', playerId)
+        .single();
+
+    if (error || !player) {
+        return res.status(404).json({ error: "Igrač nije pronađen" });
     }
 
-    db.get(`SELECT * FROM players WHERE id = ?`, [playerId], (err, player) => {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
+    const noviUtakmicaBroj = player.utakmicaBroj + 1;
+    const noviProsjekBacanjaUtakmica =
+        (player.prosjekBacanjaUtakmica * player.utakmicaBroj + bacanja) / noviUtakmicaBroj;
+    const noviProsjekPromasajaUtakmica =
+        (player.prosjekPromasajaUtakmica * player.utakmicaBroj + promasaji) / noviUtakmicaBroj;
 
-        if (!player) {
-            return res.status(404).json({ error: "Igrač nije pronađen" });
-        }
+    const { error: updateError } = await supabase
+        .from('players')
+        .update({
+            utakmicaBroj: noviUtakmicaBroj,
+            prosjekBacanjaUtakmica: noviProsjekBacanjaUtakmica,
+            prosjekPromasajaUtakmica: noviProsjekPromasajaUtakmica
+        })
+        .eq('id', playerId);
 
-        const noviUtakmicaBroj = player.utakmicaBroj + 1;
-        const noviProsjekBacanjaUtakmica =
-            (player.prosjekBacanjaUtakmica * player.utakmicaBroj + bacanja) /
-            noviUtakmicaBroj;
-        const noviProsjekPromasajaUtakmica =
-            (player.prosjekPromasajaUtakmica * player.utakmicaBroj +
-                promasaji) /
-            noviUtakmicaBroj;
+    if (updateError) {
+        return res.status(500).json({ error: updateError.message });
+    }
 
-        const sqlUpdate = `UPDATE players 
-                           SET utakmicaBroj = ?, prosjekBacanjaUtakmica = ?, prosjekPromasajaUtakmica = ? 
-                           WHERE id = ?`;
-        db.run(
-            sqlUpdate,
-            [
-                noviUtakmicaBroj,
-                noviProsjekBacanjaUtakmica,
-                noviProsjekPromasajaUtakmica,
-                playerId,
-            ],
-            function (err) {
-                if (err) {
-                    return res.status(500).json({ error: err.message });
-                }
-                res.json({
-                    id: playerId,
-                    utakmicaBroj: noviUtakmicaBroj,
-                    prosjekBacanjaUtakmica: noviProsjekBacanjaUtakmica,
-                    prosjekPromasajaUtakmica: noviProsjekPromasajaUtakmica,
-                });
-            },
-        );
+    res.json({
+        id: playerId,
+        utakmicaBroj: noviUtakmicaBroj,
+        prosjekBacanjaUtakmica: noviProsjekBacanjaUtakmica,
+        prosjekPromasajaUtakmica: noviProsjekPromasajaUtakmica
     });
 });
 
 // Brisanje igrača i svih njegovih statistika (treninga i utakmica)
-app.delete("/api/players/:id", (req, res) => {
+app.delete("/api/players/:id", async (req, res) => {
     const playerId = req.params.id;
-    const sqlDeletePlayer = `DELETE FROM players WHERE id = ?`;
-    db.run(sqlDeletePlayer, playerId, function (err) {
-        if (err) {
-            return res.status(500).json({ error: err.message });
-        }
-        if (this.changes === 0) {
-            return res.status(404).json({ error: "Igrač nije pronađen" });
-        }
-        res.json({ message: "Igrač uspešno obrisan" });
-    });
+
+    const { error } = await supabase
+        .from('players')
+        .delete()
+        .eq('id', playerId);
+
+    if (error) {
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ message: "Igrač uspešno obrisan" });
 });
 
 // Pokretanje servera
